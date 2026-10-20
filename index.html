@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f3f0e9" />
+    <meta
+      name="description"
+      content="纸间 — 一个安静、顺手的本地 Markdown 编辑器，所见即所得，支持源码模式与导出。"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23b25531'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-size='38' font-family='serif' fill='%23fff9ef'%3E纸%3C/text%3E%3C/svg%3E"
+    />
+    <title>纸间 · Markdown 编辑器</title>
+    <script>
+      try {
+        const saved = JSON.parse(localStorage.getItem('zhijian.settings.v1') || '{}');
+        const theme = ['paper', 'sepia', 'night'].includes(saved.theme) ? saved.theme : 'paper';
+        const font = saved.font === 'sans' ? 'sans' : 'serif';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.font = font;
+      } catch {
+        document.documentElement.dataset.theme = 'paper';
+        document.documentElement.dataset.font = 'serif';
+      }
+    </script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #f3f0e9;
+      }
+      #root {
+        min-height: 100vh;
+      }
+      .boot-screen {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        color: #8d8274;
+        font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+      }
+      .boot-mark {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: #b25531;
+        color: #fff9ef;
+        display: grid;
+        place-items: center;
+        font-family: 'Noto Serif SC', SimSun, serif;
+        font-size: 26px;
+        box-shadow: 0 10px 30px rgba(126, 67, 38, 0.18);
+        animation: boot-breathe 1.8s ease-in-out infinite;
+      }
+      @keyframes boot-breathe {
+        0%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.9;
+        }
+        50% {
+          transform: translateY(-3px);
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="boot-screen">
+        <div class="boot-mark">纸</div>
+        <span>正在展开纸张…</span>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

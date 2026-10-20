@@ -1,0 +1,17 @@
+node_modules/
+dist/
+release/
+ZhijianData/
+.electron-cache/
+.electron-builder-cache/
+.build-temp/
+.portable-temp/
+.chrome-profile*/
+.chrome-cdp/
+.chrome-file/
+.chrome-export/
+artifacts/downloads*/
+*.log
+*.tsbuildinfo
+
+.dsh-ops-update-*.lock
