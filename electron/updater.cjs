@@ -1,9 +1,25 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, session, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
 const RELEASES_URL = 'https://github.com/AlexRaganhar/zhijian/releases/latest';
 const AUTO_CHECK_DELAY = 5000;
 const AUTO_CHECK_INTERVAL = 6 * 60 * 60 * 1000;
+
+function proxyRulesFromResolved(value) {
+  const parts = String(value || '')
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  for (const part of parts) {
+    const match = /^(PROXY|HTTPS|SOCKS5?|SOCKS)\s+(.+)$/i.exec(part);
+    if (!match) continue;
+    const kind = match[1].toUpperCase();
+    const address = match[2].trim();
+    if (kind.startsWith('SOCKS')) return `socks=${address}`;
+    return address;
+  }
+  return '';
+}
 
 function cleanReleaseNotes(value) {
   if (!value) return '';
@@ -56,6 +72,7 @@ function createUpdateService({ debugLog = () => {} } = {}) {
   let autoCheckEnabled = false;
   let autoCheckTimer = null;
   let autoCheckInterval = null;
+  let proxyReady = Promise.resolve();
   let initialized = false;
 
   const state = {
@@ -94,6 +111,27 @@ function createUpdateService({ debugLog = () => {} } = {}) {
   function setState(patch) {
     Object.assign(state, patch);
     broadcast();
+  }
+
+  async function configureProxy() {
+    try {
+      const resolved = await session.defaultSession.resolveProxy('https://github.com');
+      debugLog('system-proxy', resolved);
+      const fallback = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
+      const rules = (
+        proxyRulesFromResolved(resolved) ||
+        String(fallback).replace(/^https?:\/\//i, '').replace(/\/$/, '')
+      ).trim();
+      if (rules) {
+        await autoUpdater.netSession.setProxy({ proxyRules: rules });
+        debugLog('updater-proxy', rules);
+      } else {
+        await autoUpdater.netSession.setProxy({ mode: 'system' });
+        debugLog('updater-proxy', 'system');
+      }
+    } catch (error) {
+      debugLog('updater-proxy-error', error?.stack || String(error));
+    }
   }
 
   function beginChecking() {
@@ -138,6 +176,7 @@ function createUpdateService({ debugLog = () => {} } = {}) {
       return { ...state };
     }
 
+    await proxyReady;
     beginChecking();
     try {
       await autoUpdater.checkForUpdates();
@@ -159,6 +198,7 @@ function createUpdateService({ debugLog = () => {} } = {}) {
     if (portable || !packaged || state.status !== 'available') {
       return { ...state };
     }
+    await proxyReady;
     setState({
       status: 'downloading',
       message: '正在下载更新…',
@@ -243,6 +283,7 @@ function createUpdateService({ debugLog = () => {} } = {}) {
       error: (...args) => debugLog('updater-error', ...args),
       debug: (...args) => debugLog('updater-debug', ...args),
     };
+    proxyReady = configureProxy();
 
     autoUpdater.on('checking-for-update', () => {
       setState({

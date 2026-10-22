@@ -1,6 +1,6 @@
-﻿appId: com.zhijian.markdown
-productName: 绾搁棿
-copyright: Copyright 漏 2026 绾搁棿
+appId: com.zhijian.markdown
+productName: 纸间
+copyright: Copyright © 2026 纸间
 asar: true
 compression: normal
 directories:
@@ -13,6 +13,10 @@ files:
   - package.json
 extraMetadata:
   main: electron/main.cjs
+publish:
+  provider: github
+  owner: AlexRaganhar
+  repo: zhijian
 win:
   icon: assets/icon.ico
   target:
@@ -31,7 +35,6 @@ mac:
     - dmg
     - zip
   artifactName: Zhijian-${version}-mac-${arch}.${ext}
-publish: null
 dmg:
   sign: false
 fileAssociations:
@@ -40,8 +43,8 @@ fileAssociations:
       - markdown
       - mdown
       - mkd
-    name: Markdown 鏂囨。
-    description: 浣跨敤绾搁棿鎵撳紑 Markdown 鏂囨。
+    name: Markdown 文档
+    description: 使用纸间打开 Markdown 文档
     icon: assets/icon.ico
     role: Editor
 nsis:
@@ -51,7 +54,7 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: 绾搁棿
+  shortcutName: 纸间
   runAfterFinish: true
   artifactName: Zhijian-${version}-setup.${ext}
 portable:
