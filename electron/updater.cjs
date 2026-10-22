@@ -54,7 +54,11 @@ function cleanReleaseNotes(value) {
 
 function friendlyError(error) {
   const message = String(error?.message || error || '未知错误');
-  if (/ENOTFOUND|ERR_INTERNET_DISCONNECTED|ERR_CONNECTION|ETIMEDOUT|ECONNREFUSED/i.test(message)) {
+  if (
+    /ENOTFOUND|ERR_INTERNET_DISCONNECTED|ERR_CONNECTION|ETIMEDOUT|ERR_TIMED_OUT|ECONNREFUSED|ERR_FAILED/i.test(
+      message,
+    )
+  ) {
     return '无法连接更新服务器，请检查网络后重试。';
   }
   if (/404|latest\.yml|app-update\.yml|Cannot find/i.test(message)) {
