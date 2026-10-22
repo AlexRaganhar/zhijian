@@ -17,6 +17,47 @@ export interface DesktopSaveResult {
   mtimeMs: number;
 }
 
+export type UpdateStatus =
+  | 'idle'
+  | 'disabled'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+  | 'unsupported';
+
+export interface UpdateState {
+  status: UpdateStatus;
+  currentVersion: string;
+  availableVersion: string | null;
+  releaseName: string | null;
+  releaseNotes: string;
+  releaseDate: string | null;
+  progress: number;
+  bytesPerSecond: number;
+  transferred: number;
+  total: number;
+  message: string;
+  portable: boolean;
+  canCheck: boolean;
+  canDownload: boolean;
+  canInstall: boolean;
+  manualDownloadUrl: string;
+  checkedAt: number | null;
+}
+
+export interface DesktopUpdatesApi {
+  getState: () => Promise<UpdateState>;
+  check: () => Promise<UpdateState>;
+  download: () => Promise<UpdateState>;
+  install: () => Promise<{ ok: boolean; message?: string }>;
+  openReleasePage: () => Promise<void>;
+  setAutoCheck: (enabled: boolean) => Promise<UpdateState>;
+  onState: (callback: (state: UpdateState) => void) => () => void;
+}
+
 export interface DesktopApi {
   isDesktop: true;
   platform: string;
@@ -30,6 +71,7 @@ export interface DesktopApi {
   saveFileSync: (filePath: string, content: string) => { ok: boolean; message?: string };
   getPathForFile: (file: File) => string;
   onOpenFiles: (callback: (files: DesktopFile[]) => void) => () => void;
+  updates: DesktopUpdatesApi;
 }
 
 declare global {

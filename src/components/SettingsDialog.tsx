@@ -5,11 +5,13 @@ import {
   HardDrive,
   Moon,
   Palette,
+  RefreshCw,
   RotateCcw,
   SlidersHorizontal,
   Sun,
   Type,
 } from 'lucide-react';
+import type { UpdateState } from '../lib/desktop';
 import type { Settings, ThemeName } from '../types';
 import { Modal } from './Modal';
 
@@ -18,7 +20,10 @@ interface SettingsDialogProps {
   settings: Settings;
   storageBytes: number;
   isDesktop?: boolean;
+  appVersion?: string;
+  updateState?: UpdateState | null;
   onOpenDefaultApps?: () => void;
+  onOpenUpdates?: () => void;
   onClose: () => void;
   onChange: (patch: Partial<Settings>) => void;
   onReset: () => void;
@@ -65,7 +70,10 @@ export function SettingsDialog({
   settings,
   storageBytes,
   isDesktop = false,
+  appVersion = '',
+  updateState = null,
   onOpenDefaultApps,
+  onOpenUpdates,
   onClose,
   onChange,
   onReset,
@@ -215,6 +223,33 @@ export function SettingsDialog({
           >
             <FileCheck2 size={14} />
             打开 Windows 默认应用设置
+          </button>
+        </section>
+      )}
+
+      {isDesktop && (
+        <section className="settings-section storage-section">
+          <div className="settings-label">
+            <RefreshCw size={15} />
+            <span>软件更新</span>
+          </div>
+          <p className="storage-copy">
+            当前版本 <strong>v{appVersion || updateState?.currentVersion || '—'}</strong>。
+            {updateState?.portable
+              ? ' 便携版请手动下载新版本。'
+              : updateState?.status === 'available'
+                ? ` 发现新版本 v${updateState.availableVersion ?? ''}。`
+                : updateState?.status === 'downloaded'
+                  ? ' 更新已下载，重启即可安装。'
+                  : ' 安装版会从 GitHub Releases 获取更新。'}
+          </p>
+          <button
+            type="button"
+            className="button ghost settings-inline-button"
+            onClick={onOpenUpdates}
+          >
+            <RefreshCw size={14} />
+            检查更新
           </button>
         </section>
       )}

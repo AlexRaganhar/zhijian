@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron')
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
+const { createUpdateService } = require('./updater.cjs');
 
 const MARKDOWN_EXT = /\.(md|markdown|mdown|mkd|txt)$/i;
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
@@ -57,6 +58,7 @@ debugLog('main-start', {
 let mainWindow = null;
 let rendererReady = false;
 let pendingPaths = [];
+let updateService = null;
 
 function parseMarkdownPaths(argv) {
   const result = [];
@@ -223,6 +225,8 @@ if (!gotSingleInstanceLock) {
     debugLog('app-ready', { userData: app.getPath('userData') });
     app.setAppUserModelId('com.zhijian.markdown');
     Menu.setApplicationMenu(null);
+    updateService = createUpdateService({ debugLog });
+    updateService.init();
     queuePaths(parseMarkdownPaths(process.argv));
     createWindow();
 
@@ -235,6 +239,15 @@ if (!gotSingleInstanceLock) {
         files,
       };
     });
+
+    ipcMain.handle('updates:get-state', () => updateService?.getState() ?? null);
+    ipcMain.handle('updates:check', () => updateService?.check({ manual: true }));
+    ipcMain.handle('updates:download', () => updateService?.download());
+    ipcMain.handle('updates:install', () => updateService?.install());
+    ipcMain.handle('updates:open-release-page', () => updateService?.openReleasePage());
+    ipcMain.handle('updates:set-auto-check', (_event, enabled) =>
+      updateService?.setAutoCheck(Boolean(enabled)),
+    );
 
     ipcMain.handle('file:open-dialog', async () => {
       if (!mainWindow) return [];

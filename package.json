@@ -1,7 +1,7 @@
 {
   "name": "zhijian-markdown-editor",
   "productName": "纸间",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "纸间 — 本地优先的中文 Markdown 编辑器",
   "author": "AlexRaganhar",
@@ -25,7 +25,9 @@
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:dir": "npm run build && electron-builder --dir"
   },
-  "dependencies": {},
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  },
   "devDependencies": {
     "@codemirror/lang-markdown": "^6.5.2",
     "@milkdown/crepe": "7.22.3",

@@ -13,6 +13,10 @@ files:
   - package.json
 extraMetadata:
   main: electron/main.cjs
+publish:
+  provider: github
+  owner: AlexRaganhar
+  repo: zhijian
 win:
   icon: assets/icon.ico
   target:

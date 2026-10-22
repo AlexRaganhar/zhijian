@@ -18,6 +18,7 @@ export interface Settings {
   paperWidth: number;
   sidebarOpen: boolean;
   outlineOpen: boolean;
+  autoCheckUpdates: boolean;
 }
 
 export interface OutlineItem {

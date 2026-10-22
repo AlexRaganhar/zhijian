@@ -26,4 +26,18 @@ contextBridge.exposeInMainWorld('zhijian', {
     ipcRenderer.on('file:open', handler);
     return () => ipcRenderer.removeListener('file:open', handler);
   },
+  updates: {
+    getState: () => ipcRenderer.invoke('updates:get-state'),
+    check: () => ipcRenderer.invoke('updates:check'),
+    download: () => ipcRenderer.invoke('updates:download'),
+    install: () => ipcRenderer.invoke('updates:install'),
+    openReleasePage: () => ipcRenderer.invoke('updates:open-release-page'),
+    setAutoCheck: (enabled) =>
+      ipcRenderer.invoke('updates:set-auto-check', Boolean(enabled)),
+    onState: (callback) => {
+      const handler = (_event, state) => callback(state);
+      ipcRenderer.on('updates:state', handler);
+      return () => ipcRenderer.removeListener('updates:state', handler);
+    },
+  },
 });

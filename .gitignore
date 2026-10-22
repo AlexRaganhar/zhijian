@@ -2,6 +2,7 @@ node_modules/
 dist/
 release/
 ZhijianData/
+.npm-cache/
 .electron-cache/
 .electron-builder-cache/
 .build-temp/
@@ -11,7 +12,9 @@ ZhijianData/
 .chrome-file/
 .chrome-export/
 artifacts/downloads*/
+artifacts/update-userdata*/
+artifacts/localappdata/
+artifacts/*.log
+.dsh-ops-update-*.lock
 *.log
 *.tsbuildinfo
-
-.dsh-ops-update-*.lock

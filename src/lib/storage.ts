@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   paperWidth: 780,
   sidebarOpen: true,
   outlineOpen: true,
+  autoCheckUpdates: true,
 };
 
 export function makeId(): string {
@@ -125,6 +126,7 @@ export function loadSettings(): Settings {
       paperWidth: clamp(parsed.paperWidth, 620, 940, DEFAULT_SETTINGS.paperWidth),
       sidebarOpen: parsed.sidebarOpen !== false,
       outlineOpen: parsed.outlineOpen !== false,
+      autoCheckUpdates: parsed.autoCheckUpdates !== false,
     };
   } catch {
     return { ...DEFAULT_SETTINGS };

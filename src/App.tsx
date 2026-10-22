@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  ArrowUpCircle,
   Check,
   CheckCircle2,
   Code2,
@@ -12,6 +13,7 @@ import {
   PanelLeftOpen,
   PanelRightOpen,
   PenLine,
+  RefreshCw,
   Upload,
   X,
 } from 'lucide-react';
@@ -30,13 +32,16 @@ import { Outline } from './components/Outline';
 import { SettingsDialog } from './components/SettingsDialog';
 import { Sidebar } from './components/Sidebar';
 import { SourceWorkspace } from './components/SourceWorkspace';
+import { UpdateDialog } from './components/UpdateDialog';
 import { WysiwygEditor, type WysiwygHandle } from './components/WysiwygEditor';
+import { useUpdater } from './hooks/useUpdater';
 import {
   basename,
   desktopApi,
   fileTitle,
   normalizePath,
   type DesktopFile,
+  type UpdateState,
 } from './lib/desktop';
 import {
   buildExportHtml,
@@ -127,6 +132,23 @@ function desktopFileToDoc(file: DesktopFile): Doc {
   };
 }
 
+function updateChipLabel(state: UpdateState): string {
+  switch (state.status) {
+    case 'checking':
+      return '检查更新';
+    case 'available':
+      return `新版本 v${state.availableVersion ?? ''}`;
+    case 'downloading':
+      return `更新 ${state.progress}%`;
+    case 'downloaded':
+      return '重启安装';
+    case 'error':
+      return '更新失败';
+    default:
+      return `v${state.currentVersion}`;
+  }
+}
+
 export function App() {
   const [{ docs: initialDocs, activeId: initialActiveId }] = useState(loadWorkspace);
   const [docs, setDocs] = useState<Doc[]>(initialDocs);
@@ -138,11 +160,14 @@ export function App() {
   const [saveState, setSaveState] = useState<SaveState>('saved');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [updateOpen, setUpdateOpen] = useState(false);
+  const [appVersion, setAppVersion] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Doc | null>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [dragging, setDragging] = useState(false);
   const [importing, setImporting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const updater = useUpdater();
 
   const editorRef = useRef<WysiwygHandle>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -153,6 +178,7 @@ export function App() {
   const quotaNotifiedRef = useRef(false);
   const autoTitleRef = useRef(true);
   const copiedTimerRef = useRef<number | null>(null);
+  const updateNoticeRef = useRef<string | null>(null);
   const docsRef = useRef(docs);
   const pendingFileWritesRef = useRef<Map<string, string>>(new Map());
   const fileWriteTimersRef = useRef<Map<string, number>>(new Map());
@@ -171,6 +197,11 @@ export function App() {
   const closeSettings = useCallback(() => setSettingsOpen(false), []);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
   const closeDelete = useCallback(() => setDeleteTarget(null), []);
+  const closeUpdate = useCallback(() => setUpdateOpen(false), []);
+  const openUpdates = useCallback(() => {
+    setSettingsOpen(false);
+    setUpdateOpen(true);
+  }, []);
 
   const saveFileToDisk = useCallback(
     async (filePath: string, content: string, announce = false) => {
@@ -201,6 +232,16 @@ export function App() {
     for (const timer of fileWriteTimersRef.current.values()) window.clearTimeout(timer);
     fileWriteTimersRef.current.clear();
   }, []);
+
+  const installUpdate = useCallback(() => {
+    try {
+      persistWorkspace(docsRef.current, activeId);
+    } catch {
+      // The installer may still work; the next launch keeps localStorage.
+    }
+    flushFileWrites();
+    void updater.install();
+  }, [activeId, flushFileWrites, updater.install]);
 
   const openDesktopFiles = useCallback(
     (files: DesktopFile[]) => {
@@ -264,11 +305,35 @@ export function App() {
     void desktopApi
       .ready()
       .then((info) => {
+        if (info.version) setAppVersion(info.version);
         if (info.files?.length) openDesktopFiles(info.files);
       })
       .catch((error) => console.warn('初始化桌面文件通道失败', error));
     return dispose;
   }, [openDesktopFiles]);
+
+  useEffect(() => {
+    if (!desktopApi?.updates) return;
+    void updater.setAutoCheck(settings.autoCheckUpdates);
+  }, [settings.autoCheckUpdates, updater.setAutoCheck]);
+
+  useEffect(() => {
+    const state = updater.state;
+    if (!state || !state.availableVersion) return;
+    if (state.status === 'available') {
+      const key = `available:${state.availableVersion}`;
+      if (updateNoticeRef.current !== key) {
+        updateNoticeRef.current = key;
+        notify(`发现新版本 v${state.availableVersion}，点击底栏提示更新。`, 'success');
+      }
+    } else if (state.status === 'downloaded') {
+      const key = `downloaded:${state.availableVersion}`;
+      if (updateNoticeRef.current !== key) {
+        updateNoticeRef.current = key;
+        notify('更新已下载，重启纸间即可安装。', 'success');
+      }
+    }
+  }, [updater.state, notify]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
@@ -761,7 +826,7 @@ export function App() {
       const key = event.key.toLowerCase();
 
       if (event.key === 'Escape' && focusMode) {
-        const modalOpen = settingsOpen || helpOpen || Boolean(deleteTarget);
+        const modalOpen = settingsOpen || helpOpen || updateOpen || Boolean(deleteTarget);
         if (!modalOpen) {
           setFocusMode(false);
           event.preventDefault();
@@ -829,6 +894,7 @@ export function App() {
     settingsOpen,
     toggleMode,
     toggleSidebar,
+    updateOpen,
   ]);
 
   if (!activeDoc) return null;
@@ -841,6 +907,22 @@ export function App() {
 
   const sidebarVisible = settings.sidebarOpen && !focusMode;
   const outlineVisible = settings.outlineOpen && mode === 'wysiwyg' && !focusMode;
+  const updateState = updater.state;
+  const updateBusy =
+    updateState?.status === 'checking' || updateState?.status === 'downloading';
+  const updateTone =
+    updateState?.status === 'error'
+      ? 'error'
+      : updateState?.status === 'available' ||
+          updateState?.status === 'downloaded' ||
+          updateState?.status === 'downloading'
+        ? 'accent'
+        : '';
+  const UpdateIcon = updateBusy
+    ? Loader2
+    : updateState?.status === 'available' || updateState?.status === 'downloaded'
+      ? ArrowUpCircle
+      : RefreshCw;
 
   return (
     <div
@@ -1075,6 +1157,21 @@ export function App() {
             )}
           </div>
           <div className="status-right">
+            {desktopApi && updateState && (
+              <>
+                <button
+                  type="button"
+                  className={`status-update ${updateTone}`}
+                  onClick={openUpdates}
+                  title={updateState.message || '软件更新'}
+                  aria-label="打开软件更新"
+                >
+                  <UpdateIcon size={10} className={updateBusy ? 'spin' : ''} />
+                  <span>{updateChipLabel(updateState)}</span>
+                </button>
+                <span className="status-sep" />
+              </>
+            )}
             <span>{stats.words.toLocaleString()} 字</span>
             <span className="status-sep" />
             <span>{stats.chars.toLocaleString()} 字符</span>
@@ -1120,10 +1217,24 @@ export function App() {
         settings={settings}
         storageBytes={storageBytes}
         isDesktop={Boolean(desktopApi)}
+        appVersion={appVersion}
+        updateState={updateState}
         onOpenDefaultApps={() => void desktopApi?.openDefaultApps()}
+        onOpenUpdates={openUpdates}
         onClose={closeSettings}
         onChange={updateSettings}
         onReset={resetSettings}
+      />
+      <UpdateDialog
+        open={updateOpen}
+        state={updateState}
+        autoCheck={settings.autoCheckUpdates}
+        onAutoCheckChange={(enabled) => updateSettings({ autoCheckUpdates: enabled })}
+        onClose={closeUpdate}
+        onCheck={() => void updater.check()}
+        onDownload={() => void updater.download()}
+        onInstall={installUpdate}
+        onOpenReleasePage={() => void updater.openReleasePage()}
       />
       <HelpDialog open={helpOpen} onClose={closeHelp} />
 
