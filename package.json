@@ -21,8 +21,8 @@
     "build": "tsc --noEmit && vite build --configLoader native",
     "preview": "vite preview --configLoader native",
     "desktop": "npm run build && electron .",
-    "dist:win": "npm run build && electron-builder --win",
-    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win --publish never",
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
     "dist:dir": "npm run build && electron-builder --dir"
   },
   "dependencies": {
