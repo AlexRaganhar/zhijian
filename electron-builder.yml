@@ -23,6 +23,16 @@ win:
       arch:
         - x64
   artifactName: Zhijian-${version}-${arch}.${ext}
+mac:
+  icon: assets/icon.png
+  category: public.app-category.productivity
+  identity: null
+  target:
+    - dmg
+    - zip
+  artifactName: Zhijian-${version}-mac-${arch}.${ext}
+dmg:
+  sign: false
 fileAssociations:
   - ext:
       - md

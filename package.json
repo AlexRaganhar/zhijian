@@ -22,6 +22,7 @@
     "preview": "vite preview --configLoader native",
     "desktop": "npm run build && electron .",
     "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
     "dist:dir": "npm run build && electron-builder --dir"
   },
   "dependencies": {},
